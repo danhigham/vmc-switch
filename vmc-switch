@@ -64,8 +64,6 @@ class VmcSwitch < Thor
 
     pp manifest.keys
 
-
-
   end
 
   private

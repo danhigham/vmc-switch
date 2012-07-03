@@ -1,7 +1,11 @@
 vmc-switch
 ==========
 
-Store and switch between Cloud Foundry (VCAP) accounts quickly
+Clone the repository and then install all the dependencies with;
+
+    $ bundle install
+
+Store and switch between Cloud Foundry (VCAP) accounts quickly;
 
     vmc-switch add <alias> <endpoint> <username> <password>  # add credentials
     vmc-switch help [TASK]                                   # Describe available tasks or one specific task
