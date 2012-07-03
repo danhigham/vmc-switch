@@ -1,0 +1,86 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'bundler/setup'
+require 'yaml'
+require 'thor'
+require 'cli'
+require 'pp'
+require 'fileutils'
+
+module MiscExt
+  def login(username, password)
+    client.login username, password
+  end
+end
+
+class VmcSwitch < Thor
+
+  HOME = ENV['HOME'] || '/tmp'
+  MANIFEST_HOME = "#{HOME}/.vmc-switch"
+  MANIFEST_PATH = "#{MANIFEST_HOME}/vmc-switch-manifest.yml"
+  
+  attr_accessor :manifest
+
+  desc "add <alias> <endpoint> <username> <password>", "add credentials"
+  def add(endpoint_alias, endpoint, username, password)
+    puts "Adding credential #{endpoint_alias}"
+
+    load_manifest
+    @manifest[endpoint_alias] = { :endpoint => endpoint, :username => username, :password => password } if !@manifest.has_key? endpoint_alias
+    save_manifest
+  end
+
+  desc "remove <alias>" ,"remove credentials"
+  # method_option :delay,  :default => 0, :aliases => "-w", :desc => "wait server finish it's job"
+  def remove(endpoint_alias)
+    puts "Removing credential #{endpoint_alias}"
+
+    load_manifest
+    @manifest.delete(endpoint_alias) if @manifest.has_key? endpoint_alias
+    save_manifest
+
+  end
+
+  desc "login <alias>" ,"login to endpoint"
+  # method_option :delay,  :default => 0, :aliases => "-w", :desc => "wait server finish it's job"
+  def login(endpoint_alias)
+    puts "Logging in to #{endpoint_alias}"
+    load_manifest
+    creds = @manifest[endpoint_alias]
+
+    VMC::Cli::Command::Misc.send :include, MiscExt
+
+    misc = VMC::Cli::Command::Misc.new
+
+    misc.set_target creds[:endpoint]
+    misc.login creds[:username], creds[:password]
+  end
+
+  desc "list" ,"list all endpoints"
+  # method_option :delay,  :default => 0, :aliases => "-w", :desc => "wait server finish it's job"
+  def list()
+    puts "Listing all endpoints"
+    load_manifest
+
+    pp manifest.keys
+
+
+
+  end
+
+  private
+
+  def save_manifest
+    FileUtils.mkdir_p MANIFEST_HOME if !Dir.exists? MANIFEST_HOME
+    File.open(MANIFEST_PATH, 'w') {|f| f.write(@manifest.to_yaml) }
+  end
+
+  def load_manifest
+    save_manifest if !File.exist?(MANIFEST_PATH)
+    manifest = YAML.load File.read(MANIFEST_PATH)
+    @manifest = manifest || {}
+  end
+
+end
+
+VmcSwitch.start
